@@ -1,4 +1,5 @@
 #include "cpu.h"
+#include<unistd.h>
 
 // ============
 //  Functions 
@@ -44,11 +45,22 @@ void debug(CPU cpu) {
     printf("--------------------------------------\n");
 }
 
+// ==================
+//  CLOCK FUNCTIONS
+// ==================
+
+
+// await to execute next instrucction
+void clock(double time) {
+    //while (time >= 0) {
+    sleep(time);
+    //    time--;
+    //}
+}
 
 // ==================
 //  MEMORY FUNCTIONS
 // ==================
-
 
 void push(CPU* cpu, Mem* mem, Byte data) {
     Word address = (0x0001 << 8) | cpu->S;
@@ -157,6 +169,7 @@ void execute(CPU* cpu, Mem* mem) {
                 cpu->A = ld_imm(cpu, mem);
                 flag_Z(cpu, cpu->A);
                 flag_N(cpu, cpu->A);
+                clock(0.2);
                 debug(*cpu);
             }
             break;
@@ -164,6 +177,7 @@ void execute(CPU* cpu, Mem* mem) {
                 cpu->A = ld_zp(cpu, mem);
                 flag_Z(cpu, cpu->A);
                 flag_N(cpu, cpu->A);
+                clock(0.3);
                 debug(*cpu);
             }
             break;
@@ -173,6 +187,7 @@ void execute(CPU* cpu, Mem* mem) {
                 cpu->A = ldxy_zp(cpu, mem, cpu->X);
                 flag_Z(cpu, cpu->A);
                 flag_N(cpu, cpu->A);
+                clock(0.4);
                 debug(*cpu);
             }
             break;
@@ -180,6 +195,7 @@ void execute(CPU* cpu, Mem* mem) {
                 cpu->A = ld_abs(cpu, mem);
                 flag_Z(cpu, cpu->A);
                 flag_N(cpu, cpu->A);
+                clock(0.4);
                 debug(*cpu);
             }
             break;
@@ -189,6 +205,7 @@ void execute(CPU* cpu, Mem* mem) {
                 cpu->A = ldaxy_abs(cpu, mem, cpu->X);
                 flag_Z(cpu, cpu->A);
                 flag_N(cpu, cpu->A);
+                clock(0.4);
                 debug(*cpu);
             }
             break;
@@ -196,6 +213,7 @@ void execute(CPU* cpu, Mem* mem) {
                 cpu->A = ldaxy_abs(cpu, mem, cpu->Y);
                 flag_Z(cpu, cpu->A);
                 flag_N(cpu, cpu->A);
+                clock(0.4);
                 debug(*cpu);
             }
             break;
@@ -205,6 +223,7 @@ void execute(CPU* cpu, Mem* mem) {
                 cpu->A = ldxy_indirect(cpu, mem, cpu->X);
                 flag_Z(cpu, cpu->A);
                 flag_N(cpu, cpu->A);
+                clock(0.6);
                 debug(*cpu);
             }
             break;
@@ -214,6 +233,7 @@ void execute(CPU* cpu, Mem* mem) {
                 cpu->A = ldxy_indirect(cpu, mem, cpu->Y);
                 flag_Z(cpu, cpu->A);
                 flag_N(cpu, cpu->A);
+                clock(0.6);
                 debug(*cpu);
             } 
             break;
@@ -221,6 +241,7 @@ void execute(CPU* cpu, Mem* mem) {
                 cpu->X = ld_imm(cpu, mem);
                 flag_Z(cpu, cpu->X);
                 flag_N(cpu, cpu->X);
+                clock(0.2);
                 debug(*cpu);
             }
             break;
@@ -228,6 +249,7 @@ void execute(CPU* cpu, Mem* mem) {
                 cpu->X = ld_zp(cpu, mem);
                 flag_Z(cpu, cpu->X);
                 flag_N(cpu, cpu->X);
+                clock(0.3);
                 debug(*cpu);
             }
             break;
@@ -237,6 +259,7 @@ void execute(CPU* cpu, Mem* mem) {
                 cpu->A = ldxy_zp(cpu, mem, cpu->Y);
                 flag_Z(cpu, cpu->X);
                 flag_N(cpu, cpu->X);
+                clock(0.4);
                 debug(*cpu);
             }
             break;
@@ -244,6 +267,7 @@ void execute(CPU* cpu, Mem* mem) {
                 cpu->X = ld_abs(cpu, mem);
                 flag_Z(cpu, cpu->X);
                 flag_N(cpu, cpu->X);
+                clock(0.4);
                 debug(*cpu);
             }
             break;
@@ -251,6 +275,7 @@ void execute(CPU* cpu, Mem* mem) {
                 cpu->X = ldaxy_abs(cpu, mem, cpu->Y);
                 flag_Z(cpu, cpu->X);
                 flag_N(cpu, cpu->X);
+                clock(0.4);
                 debug(*cpu);
             }
             break;
@@ -258,6 +283,7 @@ void execute(CPU* cpu, Mem* mem) {
                 cpu->Y = ld_imm(cpu, mem);
                 flag_Z(cpu, cpu->Y);
                 flag_N(cpu, cpu->Y);
+                clock(0.2);
                 debug(*cpu);
             }
             break;
@@ -265,8 +291,10 @@ void execute(CPU* cpu, Mem* mem) {
                 cpu->Y = ld_zp(cpu, mem);
                 flag_Z(cpu, cpu->Y);
                 flag_N(cpu, cpu->Y);
+                clock(0.3);
                 debug(*cpu);
             }
+
             break;
             case LDY_PAG_X: {
                 cpu->X = 0x5; // Todo: delete after testing
@@ -274,6 +302,7 @@ void execute(CPU* cpu, Mem* mem) {
                 cpu->Y = ldxy_zp(cpu, mem, cpu->X);
                 flag_Z(cpu, cpu->Y);
                 flag_N(cpu, cpu->Y);
+                clock(0.4);
                 debug(*cpu);
             }
             break;
@@ -281,6 +310,7 @@ void execute(CPU* cpu, Mem* mem) {
                 cpu->Y = ld_abs(cpu, mem);
                 flag_Z(cpu, cpu->Y);
                 flag_N(cpu, cpu->Y);
+                clock(0.4);
                 debug(*cpu);
             }
             break;
@@ -288,16 +318,19 @@ void execute(CPU* cpu, Mem* mem) {
                 cpu->Y = ldaxy_abs(cpu, mem, cpu->X);
                 flag_Z(cpu, cpu->Y);
                 flag_N(cpu, cpu->Y);
+                clock(0.4);
                 debug(*cpu);
             }
             break;
             case JMP_ABS: {
                 cpu->PC = jmp_abs(cpu, mem);
+                clock(0.3);
                 debug(*cpu);
             }
             break;
             case JMP_INDIRECT: {
                 cpu->PC = jmp_indirect(cpu, mem);
+                clock(0.5);
                 debug(*cpu);
             }
             break;

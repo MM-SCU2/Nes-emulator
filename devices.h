@@ -1,10 +1,9 @@
 #include "stdint.h"
 
-#define MAX_MEM 1024*64
 
+#define MAX_MEM 1024*64
 typedef uint8_t  Byte;
 typedef uint16_t  Word;
-
 
 // ============
 //  Structures
