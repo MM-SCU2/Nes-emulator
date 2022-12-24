@@ -1,0 +1,43 @@
+CPU: 
+    * Based on the MOS Technology 6502
+    * It has 151 official opcodes 
+    * Clock determines speed of execution, speed of clock depends on device model, i.e: PAL version has a rate of 1.66 MHz 
+    * Most instructions take 2 to 7 seven clock cycles to execute
+    * It is an 8 bit cpu, so it has an 8-bit data bus
+    * It has 16-bit address space, so it can address memory locations up to 2^16 from 0x0000 to 0xFFFF
+    * It is little endian 
+    * It includes six registers 
+
+RAM: 
+    * Only has 2 Kib space, the cartbridge and be used to expand it 
+    * Memory is divided in several regions, Ram is located at first 2 kib of the address space (from 0x0000 to 0x07FF)
+
+
+Areas in memory:
+    * They are divided in 256 pages of 256 bytes each, ( 2^16 / 2^8)
+    * First page is zero page that stars at 0x0000 (ends at 0x00FF)
+
+
+PPU: 
+    * It has a resolution of 256 x 240 pixels and a palette of 54 colours
+    * It supports up to 64 simultaneous sprites(or objects) and scrolling background
+    * It has 16 kib space address, from 0x0000 to 0x3FFF
+    * IT includes a block of 256 bytes of memory termed "object attribute memory" (OAM). It is separated from de PPU's 16 KIB, PPU reads from it when rendering the sprites to determine their appareance and position.
+    * It must be written in certain memory areas to change PPU and OAM state.
+
+AUP: 
+    * It has four analogue channels and one digital for sound
+    * As PPU it is controlled writing to specific address of the CPU  address space
+
+
+Game-Cartbridge: 
+    * It is part of the system too 
+    * The simplest one is the NROM, it has two chips:
+        PRG-ROM: contains the program itself as machine code and is 16 kib or 32 kib in size. 
+                 It is mapped to the CPU's address space so that the CPU can execute that program code.
+        CHR-ROM: contains the patter table data for the background and the sprites, it is either 4 kib or 8 kb in size. It is mapped to the PPU address space.
+
+MMC: 
+    * It is an extra chip in the cartbridge that allows to store more programs and patter date.
+    * It helps to map bytes to the CPU or PPU.
+

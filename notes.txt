@@ -1,0 +1,17 @@
+addressing modes:
+
+ways of accesing memory or operands
+
+1) absolute or direct:
+    the instruction has the memory address directly 
+    
+    jmp [address]
+
+2) PC-relative 
+    It uses the position of the PC (program counter) plus an offset
+
+3) register indirect 
+
+    the direction is stored in a regiter 
+
+    jmp reg 
