@@ -197,6 +197,44 @@ Word jmp_indirect(CPU* cpu, Mem* mem) {
     return indirect(cpu, mem , indirect_addr);
 }
 
+// ===================
+//  Transfer functions
+// ===================
+
+void tax(CPU* cpu) {
+    cpu->X = cpu->A;
+    flag_Z(cpu, cpu->X);
+    flag_N(cpu, cpu->X);
+}
+
+void tay(CPU* cpu) {
+    cpu->Y = cpu->A;
+    flag_Z(cpu, cpu->Y);
+    flag_N(cpu, cpu->Y);
+}
+
+void tsx(CPU* cpu) {
+    cpu->X = cpu->S;
+    flag_Z(cpu, cpu->X);
+    flag_N(cpu, cpu->X);
+}
+
+void txa(CPU* cpu) {
+    cpu->A = cpu->X;
+    flag_Z(cpu, cpu->A);
+    flag_N(cpu, cpu->A);
+}
+
+void txs(CPU* cpu) {
+    cpu->S = cpu->X;
+}
+
+void tya(CPU* cpu) {
+    cpu->A = cpu->Y;
+    flag_Z(cpu, cpu->A);
+    flag_N(cpu, cpu->A);
+}
+
 //* -------------------
 //*     MAIN LOOP
 //* -------------------
@@ -206,30 +244,36 @@ void execute(CPU* cpu, Mem* mem) {
         Byte ins = fetchByte(cpu, mem);
 
         switch (ins) {
-
             case ASL_ACC: {
                 asl_acc(cpu, mem);
-                clock(2);
+                clock(0.2);
+                printf("shifted value is acc: %d \n", cpu->A);
             }
             break;
             case ASL_ZP: {
                 asl_zp(cpu, mem);
-                clock(5);
+                clock(0.5);
+                printf("shifted value is zp: %d \n", mem->memory[0x56]);
             }
             break;
             case ASL_ZPX: {
+                cpu->X = 1; // TODO: delete after testing
                 asl_zpx(cpu, mem);
-                clock(6);
+                clock(0.6);
+                printf("shifted value is zpx: %d \n", mem->memory[0x59]);
             }
             break;
             case ASL_ABS: {
                 asl_abs(cpu, mem);
-                clock(6);
+                clock(0.6);
+                printf("shifted value is abs: %d \n", mem->memory[0x5656]);
             }
             break;
-            case ASL_ABSX: {
+            case ASL_ABSX: {                
+                cpu->X = 1; // TODO: delete after testing
                 asl_absx(cpu, mem);
-                clock(6);
+                clock(0.6);
+                printf("shifted value is absx: %d \n", mem->memory[0x5758]);
             }
             break;
             case LDA_IMM: {
@@ -237,7 +281,6 @@ void execute(CPU* cpu, Mem* mem) {
                 flag_Z(cpu, cpu->A);
                 flag_N(cpu, cpu->A);
                 clock(0.2);
-                debug(*cpu);
             }
             break;
             case LDA_Z_PAG: {
@@ -245,17 +288,13 @@ void execute(CPU* cpu, Mem* mem) {
                 flag_Z(cpu, cpu->A);
                 flag_N(cpu, cpu->A);
                 clock(0.3);
-                debug(*cpu);
             }
             break;
             case LDA_Z_PAG_X: {
-                cpu->X = 0x5; // Todo: delete after testing
-
                 cpu->A = ldxy_zp(cpu, mem, cpu->X);
                 flag_Z(cpu, cpu->A);
                 flag_N(cpu, cpu->A);
                 clock(0.4);
-                debug(*cpu);
             }
             break;
             case LDA_ABS: {
@@ -263,17 +302,13 @@ void execute(CPU* cpu, Mem* mem) {
                 flag_Z(cpu, cpu->A);
                 flag_N(cpu, cpu->A);
                 clock(0.4);
-                debug(*cpu);
             }
             break;
             case LDA_ABS_X: {
-                cpu->X = 0; // Todo: delete after testing
-
                 cpu->A = ldaxy_abs(cpu, mem, cpu->X);
                 flag_Z(cpu, cpu->A);
                 flag_N(cpu, cpu->A);
                 clock(0.4);
-                debug(*cpu);
             }
             break;
             case LDA_ABS_Y: {
@@ -281,27 +316,20 @@ void execute(CPU* cpu, Mem* mem) {
                 flag_Z(cpu, cpu->A);
                 flag_N(cpu, cpu->A);
                 clock(0.4);
-                debug(*cpu);
             }
             break;
             case LDA_INDIRECT_X: {
-                cpu->X = 0x1; // Todo: delete after testing
-
                 cpu->A = ldxy_indirect(cpu, mem, cpu->X);
                 flag_Z(cpu, cpu->A);
                 flag_N(cpu, cpu->A);
                 clock(0.6);
-                debug(*cpu);
             }
             break;
             case LDA_INDIRECT_Y: {
-                cpu->Y = 0x2; // Todo: delete after testing
-
                 cpu->A = ldxy_indirect(cpu, mem, cpu->Y);
                 flag_Z(cpu, cpu->A);
                 flag_N(cpu, cpu->A);
                 clock(0.6);
-                debug(*cpu);
             } 
             break;
             case LDX_IMM: {
@@ -309,7 +337,6 @@ void execute(CPU* cpu, Mem* mem) {
                 flag_Z(cpu, cpu->X);
                 flag_N(cpu, cpu->X);
                 clock(0.2);
-                debug(*cpu);
             }
             break;
             case LDX_Z_PAG: {
@@ -317,17 +344,13 @@ void execute(CPU* cpu, Mem* mem) {
                 flag_Z(cpu, cpu->X);
                 flag_N(cpu, cpu->X);
                 clock(0.3);
-                debug(*cpu);
             }
             break;
             case LDX_PAG_Y: {
-                cpu->Y = 0x5; // Todo: delete after testing
-
                 cpu->A = ldxy_zp(cpu, mem, cpu->Y);
                 flag_Z(cpu, cpu->X);
                 flag_N(cpu, cpu->X);
                 clock(0.4);
-                debug(*cpu);
             }
             break;
             case LDX_ABS: {
@@ -335,7 +358,6 @@ void execute(CPU* cpu, Mem* mem) {
                 flag_Z(cpu, cpu->X);
                 flag_N(cpu, cpu->X);
                 clock(0.4);
-                debug(*cpu);
             }
             break;
             case LDX_ABS_Y: {
@@ -343,7 +365,6 @@ void execute(CPU* cpu, Mem* mem) {
                 flag_Z(cpu, cpu->X);
                 flag_N(cpu, cpu->X);
                 clock(0.4);
-                debug(*cpu);
             }
             break;
              case LDY_IMM: {
@@ -351,7 +372,6 @@ void execute(CPU* cpu, Mem* mem) {
                 flag_Z(cpu, cpu->Y);
                 flag_N(cpu, cpu->Y);
                 clock(0.2);
-                debug(*cpu);
             }
             break;
             case LDY_Z_PAG: {
@@ -359,18 +379,14 @@ void execute(CPU* cpu, Mem* mem) {
                 flag_Z(cpu, cpu->Y);
                 flag_N(cpu, cpu->Y);
                 clock(0.3);
-                debug(*cpu);
             }
 
             break;
             case LDY_PAG_X: {
-                cpu->X = 0x5; // Todo: delete after testing
-
                 cpu->Y = ldxy_zp(cpu, mem, cpu->X);
                 flag_Z(cpu, cpu->Y);
                 flag_N(cpu, cpu->Y);
                 clock(0.4);
-                debug(*cpu);
             }
             break;
             case LDY_ABS: {
@@ -378,7 +394,6 @@ void execute(CPU* cpu, Mem* mem) {
                 flag_Z(cpu, cpu->Y);
                 flag_N(cpu, cpu->Y);
                 clock(0.4);
-                debug(*cpu);
             }
             break;
             case LDY_ABS_X: {
@@ -386,19 +401,45 @@ void execute(CPU* cpu, Mem* mem) {
                 flag_Z(cpu, cpu->Y);
                 flag_N(cpu, cpu->Y);
                 clock(0.4);
-                debug(*cpu);
             }
             break;
             case JMP_ABS: {
                 cpu->PC = jmp_abs(cpu, mem);
                 clock(0.3);
-                debug(*cpu);
             }
             break;
             case JMP_INDIRECT: {
                 cpu->PC = jmp_indirect(cpu, mem);
                 clock(0.5);
-                debug(*cpu);
+            }
+            case TAX: {
+                tax(cpu);
+                clock(0.2);
+            }
+            break;
+            case TAY: {
+                tay(cpu);
+                clock(0.2);
+            }
+            break;
+            case TSX: {
+                tsx(cpu);
+                clock(0.2);
+            }
+            break;
+            case TXA: {
+                txa(cpu);
+                clock(0.2);
+            }
+            break;
+            case TXS: {
+                txs(cpu);
+                clock(0.2);
+            }   
+            break;
+            case TYA: {
+                tya(cpu);
+                clock(0.2);
             }
             break;
             default: {
@@ -416,42 +457,33 @@ int main() {
     CPU cpu;
     Mem memory;
 
-    // N flag test
     reset(cpu, memory);
-    memory.memory[0] = 0xA9;
-    memory.memory[1] = -2;
 
-    // pag_z test
-    memory.memory[2] = 0xA5;
-    memory.memory[3] = 0xf5;
-    memory.memory[0xf5] = 5;
+    // asl acc
+    memory.memory[0] = 0x0A;
+    
+    // asl zp 
+    memory.memory[1] = 0x06;
+    memory.memory[2] = 0x56;
+    memory.memory[0x56] = 1;
 
-    // pag z with x offset
-    memory.memory[4] = 0xb5;
-    memory.memory[5] = 0x55;
-    memory.memory[0x5A] = 6;
+    // asl zpx 
+    
+    memory.memory[3] = 0x16;
+    memory.memory[4] = 0x58;
+    memory.memory[0x59] = 2;
 
-   // lda abs x
-    memory.memory[6] = 0xbd;
-    memory.memory[7] = 0x10;
-    memory.memory[8] = 0x11;
-    memory.memory[0x1110] = -7;
+    // asl abs 
+    memory.memory[5] = 0x0E;
+    memory.memory[6] = 0x56;
+    memory.memory[7] = 0x56;
+    memory.memory[0x5656] = 3;
 
-    // lda indirect x
-    memory.memory[9] = 0xA1;
-    memory.memory[10] = 0x11;
-    memory.memory[11] = 0x11;
-    memory.memory[0x1112] = 0x11;
-    memory.memory[0x1113] = 0x12;
-    memory.memory[0x1211] = 8;
-
-    // lda indirect y
-    memory.memory[12] = 0xb1;
-    memory.memory[13] = 0x44;
-    memory.memory[14] = 0x44;
-    memory.memory[0x4446] = 0x20;
-    memory.memory[0x4447] = 0x20;
-    memory.memory[0x2020] = 1;
+    // asl absx
+    memory.memory[8] = 0x1E;
+    memory.memory[9] = 0x57;
+    memory.memory[10] = 0x57;
+    memory.memory[0x5758] = 8;
 
     execute(&cpu, &memory);
 

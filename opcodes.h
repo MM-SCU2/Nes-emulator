@@ -28,6 +28,11 @@
 #define LDY_ABS_X 0xBC
 #define JMP_ABS 0x4C
 #define JMP_INDIRECT 0x6C
-
-
+#define TAX 0xAA
+#define TAY 0xA8
+#define TSX 0xBA
+#define TXA 0x8A
+#define TXS 0x9A
+#define TYA 0x98
+      
 
