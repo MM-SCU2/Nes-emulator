@@ -198,13 +198,45 @@ Word jmp_indirect(CPU* cpu, Mem* mem) {
 }
 
 // ================
-//  Interrupt flag
+//  Flags setting
 // ================
+
+void cli(CPU* cpu) {
+    cpu->I = 0;
+}
 
 void sei(CPU* cpu) {
     cpu->I = 1;
 }
 
+void clc(CPU* cpu) {
+    cpu->C = 0;
+}
+
+void sec(CPU* cpu) {
+    cpu->C = 1;
+}
+
+void cld(CPU* cpu) {
+    cpu->D = 0;
+}
+
+void sed(CPU* cpu) {
+    cpu->D = 1;
+}
+
+void clv(CPU* cpu) {
+    cpu->V = 0;
+}
+
+
+// ============================
+//        Return function 
+// ============================
+
+void rts(CPU* cpu, Mem* mem) {
+    pop_pc(cpu, mem);
+}
 // ============================
 //  Transfer to memory functions
 // ============================
@@ -365,6 +397,26 @@ void execute(CPU* cpu, Mem* mem) {
                 printf("shifted value is absx: %d \n", mem->memory[0x5758]);
             }
             break;
+            case CLC: {
+                clc(cpu);
+                clock(0.2);
+            }
+            break;
+            case CLD: {
+                cld(cpu);
+                clock(0.2);
+            }
+            break;
+            case CLI: {
+                cli(cpu);
+                clock(0.2);
+            }
+            break;
+            case CLV: {
+                clv(cpu);
+                clock(0.2);
+            }
+            break;
             case LDA_IMM: {
                 cpu->A = ld_imm(cpu, mem);
                 flag_Z(cpu, cpu->A);
@@ -501,13 +553,28 @@ void execute(CPU* cpu, Mem* mem) {
                 cpu->PC = jmp_indirect(cpu, mem);
                 clock(0.5);
             }
+            case RTS: {
+                rts(cpu, mem);
+                clock(0.6);
+            }
             case STA_ZP: {
                 sta_zp(cpu, mem);
                 clock(0.3);
             }
             break;
+            case SEC: {
+                sec(cpu);
+                clock(0.2);
+            }
+            break;
+            case SED: {
+                sed(cpu);
+                clock(0.2);
+            }
+            break;
             case SEI: {
                 sei(cpu);
+                clock(0.2);
             }
             case STA_ZPX: {
                 sta_zpx(cpu, mem);

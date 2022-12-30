@@ -8,6 +8,10 @@
 #define ASL_ZPX  0x16
 #define ASL_ABS  0x0E
 #define ASL_ABSX 0x1E
+#define CLC 0x18
+#define CLD 0xD8
+#define CLI 0x58
+#define CLV 0xB8
 #define LDA_IMM  0xA9
 #define LDA_Z_PAG  0xA5
 #define LDA_Z_PAG_X  0xB5
@@ -28,6 +32,9 @@
 #define LDY_ABS_X 0xBC
 #define JMP_ABS 0x4C
 #define JMP_INDIRECT 0x6C
+#define RTS 0x60
+#define SEC 0x38
+#define SED 0xF8
 #define SEI 0x78
 #define STA_ZP   0x85
 #define STA_ZPX  0x95
