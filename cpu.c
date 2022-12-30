@@ -197,6 +197,95 @@ Word jmp_indirect(CPU* cpu, Mem* mem) {
     return indirect(cpu, mem , indirect_addr);
 }
 
+// ================
+//  Interrupt flag
+// ================
+
+void sei(CPU* cpu) {
+    cpu->I = 1;
+}
+
+// ============================
+//  Transfer to memory functions
+// ============================
+
+// store accumulator
+
+void sta_zp(CPU* cpu, Mem* mem) {
+    Byte zp_addr = fetchByte(cpu, mem);
+    write_byte(mem, zp_addr, cpu->A);
+}
+
+void sta_zpx(CPU* cpu, Mem* mem) {
+    Byte zp_addr = fetchByte(cpu, mem);
+    write_byte(mem, zp_addr + cpu->X, cpu->A);
+}
+
+void sta_abs(CPU* cpu, Mem* mem) {
+    Word addr = fetchWord(cpu, mem);
+    write_byte(mem, addr, cpu->A);
+}
+
+void sta_absx(CPU* cpu, Mem* mem) {
+    Word addr = fetchWord(cpu, mem);
+    write_byte(mem, addr + cpu->X, cpu->A);
+}
+
+void sta_absy(CPU* cpu, Mem* mem) {
+    Word addr = fetchWord(cpu, mem);
+    write_byte(mem, addr + cpu->Y, cpu->A);
+}
+
+void sta_indirectx(CPU* cpu, Mem* mem) {
+    // indirect address
+    Word iaddr = fetchWord(cpu, mem);
+    //real address to store data
+    Word addr  =  read_word(mem, iaddr + cpu->X);
+    write_byte(mem, addr, cpu->A);
+}
+
+void sta_indirecty(CPU* cpu, Mem* mem) {
+    // indirect address
+    Word iaddr = fetchWord(cpu, mem);
+    //real address to store data
+    Word addr  =  read_word(mem, iaddr + cpu->Y);
+    write_byte(mem, addr, cpu->A);
+}
+
+// store X
+
+void stx_zp(CPU* cpu, Mem* mem) {
+    Byte zp_addr = fetchByte(cpu, mem);
+    write_byte(mem, zp_addr, cpu->X);
+}
+
+void stx_zpy(CPU* cpu, Mem* mem) {
+    Byte zp_addr = fetchByte(cpu, mem);
+    write_byte(mem, zp_addr + cpu->Y, cpu->X);
+}
+
+void stx_abs(CPU* cpu, Mem* mem) {
+    Word addr = fetchWord(cpu, mem);
+    write_byte(mem, addr, cpu->X);
+}
+
+// store Y
+
+void sty_zp(CPU* cpu, Mem* mem) {
+    Byte zp_addr = fetchByte(cpu, mem);
+    write_byte(mem, zp_addr, cpu->Y);
+}
+
+void sty_zpx(CPU* cpu, Mem* mem) {
+    Byte zp_addr = fetchByte(cpu, mem);
+    write_byte(mem, zp_addr + cpu->X, cpu->Y);
+}
+
+void sty_abs(CPU* cpu, Mem* mem) {
+    Word addr = fetchWord(cpu, mem);
+    write_byte(mem, addr, cpu->Y);
+}
+
 // ===================
 //  Transfer functions
 // ===================
@@ -412,6 +501,73 @@ void execute(CPU* cpu, Mem* mem) {
                 cpu->PC = jmp_indirect(cpu, mem);
                 clock(0.5);
             }
+            case STA_ZP: {
+                sta_zp(cpu, mem);
+                clock(0.3);
+            }
+            break;
+            case SEI: {
+                sei(cpu);
+            }
+            case STA_ZPX: {
+                sta_zpx(cpu, mem);
+                clock(0.4);
+            }
+            break;
+            case STA_ABS: {
+                sta_abs(cpu, mem);
+                clock(0.4);
+            }
+            break;
+            case STA_ABSX: {
+                sta_absx(cpu, mem);
+                clock(0.5);
+            }
+            break;
+            case STA_ABSY: {
+                sta_absy(cpu, mem);
+                clock(0.5);
+            }
+            break;
+            case STA_INDIRECT_X: {
+                sta_indirectx(cpu, mem);
+                clock(0.6);
+            }
+            break;
+             case STA_INDIRECT_Y: {
+                sta_indirecty(cpu, mem);
+                clock(0.6);
+            }
+            break;
+            case STX_ZP: {
+                stx_zp(cpu, mem);
+                clock(0.3);
+            }
+            break;
+            case STX_ZPY: {
+                stx_zpy(cpu, mem);
+                clock(0.4);
+            }
+            break;
+            case STX_ABS: {
+                stx_abs(cpu, mem);
+                clock(0.4);
+            }
+            case STY_ZP: {
+                sty_zp(cpu, mem);
+                clock(0.3);
+            }
+            break;
+            case STY_ZPX: {
+                sty_zpx(cpu, mem);
+                clock(0.4);
+            }
+            break;
+            case STY_ABS: {
+                sty_abs(cpu, mem);
+                clock(0.4);
+            }
+            break;
             case TAX: {
                 tax(cpu);
                 clock(0.2);
@@ -438,7 +594,7 @@ void execute(CPU* cpu, Mem* mem) {
             }   
             break;
             case TYA: {
-                tya(cpu);
+                tya (cpu);
                 clock(0.2);
             }
             break;
