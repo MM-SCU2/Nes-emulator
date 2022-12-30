@@ -2,6 +2,12 @@
 //      OPCODES
 // ==================
 
+
+#define ASL_ACC  0x0A
+#define ASL_ZP   0x06
+#define ASL_ZPX  0x16
+#define ASL_ABS  0x0E
+#define ASL_ABSX 0x1E
 #define LDA_IMM  0xA9
 #define LDA_Z_PAG  0xA5
 #define LDA_Z_PAG_X  0xB5

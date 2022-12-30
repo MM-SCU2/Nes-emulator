@@ -12,5 +12,6 @@ void write_byte(Mem* mem, Word address, Byte data);
 void write_word(Mem* mem, Word address, Word data);
 Byte fetchByte(CPU* cpu, Mem* mem);
 Word fetchWord(CPU* cpu, Mem* mem);
+Byte fetch_zp(Mem* mem, Word address);
 
 #endif /* BUS_H */

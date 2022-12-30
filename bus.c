@@ -1,4 +1,18 @@
 #include "bus.h"
+// =====================================================================================
+//                            MEMORY ACCESS FUNCTIONS 
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+// considerations:
+//  * 6502 is little endian.less significant bytes are in the less significant addresses
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//
+// =====================================================================================
+
+Byte fetch_zp(Mem* mem, Word address) {
+    Word zp_address = address % 0x00ff;
+    return read_byte(mem, zp_address);
+}
+
 
 Byte read_byte(Mem* mem, Word address) {
     if(address >= 0x0000 && address <= 0xFFFF) 
@@ -31,7 +45,6 @@ void write_word(Mem *mem, Word address, Word data) {
     }
 }
 
-
 Byte fetchByte(CPU* cpu, Mem* mem) {
     Byte data = read_byte(mem, cpu->PC);
     cpu->PC++;
@@ -41,7 +54,5 @@ Byte fetchByte(CPU* cpu, Mem* mem) {
 Word fetchWord(CPU* cpu, Mem* mem) {
     Word data = read_word(mem, cpu->PC);
     cpu->PC+=2;;
-    // 6502 is little endian 
-    // less significant bytes are in the less significant addresses
     return data;
 }

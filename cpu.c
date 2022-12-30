@@ -1,4 +1,5 @@
 #include "cpu.h"
+#include "bus.h"
 #include<unistd.h>
 
 // ============
@@ -21,6 +22,7 @@ void reset(CPU cpu, Mem mem) {
 //  Context Functions
 // ==================== 
 
+void flag_C(CPU* cpu, Byte flag){cpu->C = flag;}
 void flag_Z(CPU* cpu, Byte reg) {cpu->Z = (reg == 0);}
 void flag_N(CPU* cpu, Byte reg) {cpu->N = (reg >> 7) == 1;}
 
@@ -57,7 +59,6 @@ void clock(double time) {
     //    time--;
     //}
 }
-
 // ==================
 //  MEMORY FUNCTIONS
 // ==================
@@ -92,6 +93,53 @@ Word indirect(CPU* cpu, Mem* mem, Word indirect_addr) {
 }
 
 // ================
+//  ASL FUNCTIONS
+// ================
+
+void asl_acc(CPU* cpu, Mem* mem) {
+    flag_C(cpu, (cpu->A >> 7));
+    flag_N(cpu, cpu->A);
+    flag_Z(cpu, cpu->A);
+    cpu->A = cpu->A << 1;
+}
+
+void asl_zp(CPU* cpu, Mem* mem) {
+    Byte zp_addr = fetchByte(cpu, mem);
+    Byte data = fetch_zp(mem, zp_addr);
+    flag_C(cpu, (data >> 7));
+    flag_N(cpu, data);
+    flag_Z(cpu, data);
+    write_byte(mem, zp_addr, data << 1);
+}
+
+void asl_zpx(CPU* cpu, Mem* mem) {
+    Byte zp_addr = fetchByte(cpu, mem);
+    Byte data = fetch_zp(mem, zp_addr + cpu->X);
+    flag_C(cpu, (data >> 7));
+    flag_N(cpu, data);
+    flag_Z(cpu, data);
+    write_byte(mem, zp_addr + cpu->X, data << 1);
+}
+
+void asl_abs(CPU* cpu, Mem* mem) {
+    Word abs_addr = fetchWord(cpu, mem);
+    Byte data = read_word(mem, abs_addr);
+    flag_C(cpu, (data >> 7));
+    flag_N(cpu, data);
+    flag_Z(cpu, data);
+    write_byte(mem, abs_addr, data << 1);
+}
+
+void asl_absx(CPU* cpu, Mem* mem) {
+    Word abs_addr = fetchWord(cpu, mem);
+    Byte data = read_word(mem, abs_addr + cpu->X);
+    flag_C(cpu, (data >> 7));
+    flag_N(cpu, data);
+    flag_Z(cpu, data);
+    write_byte(mem, abs_addr + cpu->X, data << 1);
+}
+
+// ================
 //  LD FUNCTIONS
 // ================
 
@@ -110,36 +158,30 @@ Byte ld_imm(CPU* cpu, Mem* mem) {
 }
 
 Byte ld_zp(CPU* cpu, Mem* mem) {
-    Byte zero_addr = fetchByte(cpu, mem);
-    Byte data = read_byte(mem, zero_addr);
-    return data;
+    Byte zp_addr = fetchByte(cpu, mem);
+    return fetch_zp(mem, zp_addr);
 }
 
 Byte ldxy_zp(CPU* cpu, Mem* mem, Byte xy_offset) {
     Byte zero_addr = fetchByte(cpu, mem);
-    Byte z_addr  =  zero_addr + xy_offset;
-    z_addr %= 0xff;
-    Byte data = read_byte(mem, z_addr);
-    return data;
+    Byte zp_addr  =  zero_addr + xy_offset;
+    return fetch_zp(mem, zp_addr);
 }
 
 Byte ld_abs(CPU* cpu, Mem* mem) {
     Word addr = fetchWord(cpu, mem);
-    Byte data  = read_byte(mem, addr);
-    return data;
+    return read_byte(mem, addr);
 }
 
 Byte ldaxy_abs(CPU* cpu, Mem* mem, Byte xy_offset) {
     Word addr = fetchWord(cpu, mem);
-    Byte data  = read_byte(mem, addr+xy_offset);
-    return data;
+    return read_byte(mem, addr+xy_offset);
 }
 
 Byte ldxy_indirect(CPU* cpu, Mem* mem, Byte xy_offset) {
     Word indirect_addr = fetchWord(cpu, mem);
     Word addr =  indirect(cpu, mem, indirect_addr+xy_offset);
-    Byte data = read_byte(mem, addr);
-    return data;
+    return read_byte(mem, addr);
 }
 
 //* ---------------------
@@ -152,8 +194,7 @@ Word jmp_abs(CPU* cpu, Mem* mem) {
 
 Word jmp_indirect(CPU* cpu, Mem* mem) {
     Word indirect_addr = fetchWord(cpu, mem);
-    Word addr = indirect(cpu, mem , indirect_addr);
-    return addr;
+    return indirect(cpu, mem , indirect_addr);
 }
 
 //* -------------------
@@ -165,6 +206,32 @@ void execute(CPU* cpu, Mem* mem) {
         Byte ins = fetchByte(cpu, mem);
 
         switch (ins) {
+
+            case ASL_ACC: {
+                asl_acc(cpu, mem);
+                clock(2);
+            }
+            break;
+            case ASL_ZP: {
+                asl_zp(cpu, mem);
+                clock(5);
+            }
+            break;
+            case ASL_ZPX: {
+                asl_zpx(cpu, mem);
+                clock(6);
+            }
+            break;
+            case ASL_ABS: {
+                asl_abs(cpu, mem);
+                clock(6);
+            }
+            break;
+            case ASL_ABSX: {
+                asl_absx(cpu, mem);
+                clock(6);
+            }
+            break;
             case LDA_IMM: {
                 cpu->A = ld_imm(cpu, mem);
                 flag_Z(cpu, cpu->A);
