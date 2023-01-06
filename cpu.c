@@ -130,13 +130,20 @@ Word indirect_xy(CPU* cpu, Mem* mem, Word indirect_addr, Byte offset) {
 // the cast to word allows to easily check for carry bit
 // and avoid data loose 
 
+// Overflow flag is setted when the sign bit of the result
+// differs from the accumulation value sign. Applying logic table
+// we see that if we do the XOR between A and R sign bits then apply AND against
+// the negation of A with M we obtain if we have to set V or not
+
 void adc(CPU* cpu, Byte M) {
     Word result = (Word)cpu->A + (Word)M + (Word)cpu->C;
+    Word AM = ((Word)cpu->A ^ (Word)M);
+    Word AR = (Word)cpu->A ^ (Word)result;
+    Byte V  = ((AR & ~AM) & 0x0080) >> 7;
+    flag_V(cpu, V);
     flag_C(cpu, result > 255);
     flag_Z(cpu, (result & 0x00FF));
     flag_N(cpu, (result & 0x00FF));
-    Byte V = ((Word)cpu->A ^ (Word)result & ~((Word)cpu->A ^ (Word)M)) & 0x0080;
-    flag_V(cpu, V >> 7);
     cpu->A = (result & 0x00FF);
 }
 
