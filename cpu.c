@@ -1,5 +1,6 @@
 #include "cpu.h"
 #include "bus.h"
+#include <stdio.h>
 #include<unistd.h>
 
 // ============
@@ -22,9 +23,10 @@ void reset(CPU cpu, Mem mem) {
 //  Context Functions
 // ==================== 
 
-void flag_C(CPU* cpu, Byte flag){cpu->C = flag;}
-void flag_Z(CPU* cpu, Byte reg) {cpu->Z = (reg == 0);}
-void flag_N(CPU* cpu, Byte reg) {cpu->N = (reg >> 7) == 1;}
+void flag_C(CPU* cpu, Byte bool){cpu->C = bool;}
+void flag_Z(CPU* cpu, Byte bool) {cpu->Z = (bool == 0);}
+void flag_N(CPU* cpu, Byte bool) {cpu->N = (bool >> 7) == 1;}
+void flag_V(CPU* cpu, Byte bool) {cpu->V = bool;}
 
 void debug(CPU cpu) {
     printf("--------------------------------------\n");
@@ -87,10 +89,106 @@ void pop_pc(CPU* cpu, Mem* mem) {
     cpu->S+=2;
 }
 
+// =================
+//  MEMORY ACCESSES
+// =================
+
+Byte zp(CPU* cpu, Mem* mem) {
+    Byte zp_addr = fetchByte(cpu, mem);
+    return fetch_zp(mem, zp_addr);
+}
+
+Byte zp_xy(CPU* cpu, Mem* mem, Byte offset) {
+    Byte zp_addr = fetchByte(cpu, mem);
+    return fetch_zp(mem, zp_addr + (Word)offset);
+}
+
+Byte abosolute(CPU* cpu, Mem* mem) {
+    Word abs_addr = fetchWord(cpu, mem);
+    return read_byte(mem, abs_addr);
+}
+
+Byte abosolute_xy(CPU* cpu, Mem* mem, Byte offset) {
+    Word abs_addr = fetchWord(cpu, mem);
+    return read_byte(mem, abs_addr + (Word)offset);
+}
+
 Word indirect(CPU* cpu, Mem* mem, Word indirect_addr) {
     Word addr = read_word(mem, indirect_addr);
     return addr; 
 }
+
+Word indirect_xy(CPU* cpu, Mem* mem, Word indirect_addr, Byte offset) {
+    Word addr = read_word(mem, indirect_addr);
+    return read_byte(mem, addr + (Word)offset); 
+}
+
+// ==============
+//  ADC FUNCTION
+// ==============
+
+// the cast to word allows to easily check for carry bit
+// and avoid data loose 
+
+void adc(CPU* cpu, Byte M) {
+    Word result = (Word)cpu->A + (Word)M + (Word)cpu->C;
+    flag_C(cpu, result > 255);
+    flag_Z(cpu, (result & 0x00FF));
+    flag_N(cpu, (result & 0x00FF));
+    Byte V = ((Word)cpu->A ^ (Word)result & ~((Word)cpu->A ^ (Word)M)) & 0x0080;
+    flag_V(cpu, V >> 7);
+    cpu->A = (result & 0x00FF);
+}
+
+void adc_imm(CPU* cpu, Mem* mem) {
+    Byte data = fetchByte(cpu, mem);
+    adc(cpu, data);
+}
+
+void adc_zp(CPU* cpu, Mem* mem) {
+    Byte zp_addr = fetchByte(cpu, mem);
+    Byte data = fetch_zp(mem, zp_addr);
+    adc(cpu, data);
+}
+
+void adc_zp_x(CPU* cpu, Mem* mem) {
+    Byte zp_addr = fetchByte(cpu, mem);
+    Byte data = fetch_zp(mem, zp_addr + cpu->X);
+    adc(cpu, data);
+}
+
+void adc_absolute(CPU* cpu, Mem* mem) {
+    Word abs_addr = fetchWord(cpu, mem);
+    Byte data = read_byte(mem, abs_addr);
+    adc(cpu, data);
+}
+
+void adc_absolute_x(CPU* cpu, Mem* mem) {
+    Word abs_addr = fetchWord(cpu, mem);
+    Byte data = read_byte(mem, abs_addr + cpu->X);
+    adc(cpu, data);
+}
+
+void adc_absolute_y(CPU* cpu, Mem* mem) {
+    Word abs_addr = fetchWord(cpu, mem);
+    Byte data = read_byte(mem, abs_addr + cpu->Y);
+    adc(cpu, data);
+}
+
+void adc_indirect_x(CPU* cpu, Mem* mem) {
+    Word indirect_addr = fetchWord(cpu, mem);
+    Word addr =  indirect(cpu, mem, indirect_addr + cpu->X);
+    Byte data = read_byte(mem, addr);
+    adc(cpu, data);
+}
+
+void adc_indirect_y(CPU* cpu, Mem* mem) {
+    Word indirect_addr = fetchWord(cpu, mem);
+    Word addr =  indirect(cpu, mem, indirect_addr + cpu->Y);
+    Byte data = read_byte(mem, addr);
+    adc(cpu, data);
+}
+
 
 // ================
 //  ASL FUNCTIONS
@@ -103,40 +201,36 @@ void asl_acc(CPU* cpu, Mem* mem) {
     cpu->A = cpu->A << 1;
 }
 
+void asl(CPU* cpu, Mem* mem, Word addr, Byte data) {
+    flag_C(cpu, (data >> 7));
+    flag_N(cpu, data);
+    flag_Z(cpu, data);
+    write_byte(mem, addr, data << 1);
+}
+
+
 void asl_zp(CPU* cpu, Mem* mem) {
     Byte zp_addr = fetchByte(cpu, mem);
     Byte data = fetch_zp(mem, zp_addr);
-    flag_C(cpu, (data >> 7));
-    flag_N(cpu, data);
-    flag_Z(cpu, data);
-    write_byte(mem, zp_addr, data << 1);
+    asl(cpu, mem, zp_addr, data);
 }
 
-void asl_zpx(CPU* cpu, Mem* mem) {
+void asl_zp_x(CPU* cpu, Mem* mem) {
     Byte zp_addr = fetchByte(cpu, mem);
     Byte data = fetch_zp(mem, zp_addr + cpu->X);
-    flag_C(cpu, (data >> 7));
-    flag_N(cpu, data);
-    flag_Z(cpu, data);
-    write_byte(mem, zp_addr + cpu->X, data << 1);
+    asl(cpu,mem, zp_addr + cpu->X, data);
 }
 
-void asl_abs(CPU* cpu, Mem* mem) {
+void asl_absolute(CPU* cpu, Mem* mem) {
     Word abs_addr = fetchWord(cpu, mem);
-    Byte data = read_word(mem, abs_addr);
-    flag_C(cpu, (data >> 7));
-    flag_N(cpu, data);
-    flag_Z(cpu, data);
-    write_byte(mem, abs_addr, data << 1);
+    Byte data = read_byte(mem, abs_addr);
+    asl(cpu, mem, abs_addr, data);
 }
 
-void asl_absx(CPU* cpu, Mem* mem) {
+void asl_absolute_x(CPU* cpu, Mem* mem) {
     Word abs_addr = fetchWord(cpu, mem);
-    Byte data = read_word(mem, abs_addr + cpu->X);
-    flag_C(cpu, (data >> 7));
-    flag_N(cpu, data);
-    flag_Z(cpu, data);
-    write_byte(mem, abs_addr + cpu->X, data << 1);
+    Byte data = read_byte(mem, abs_addr + cpu->X);
+    asl(cpu, mem, abs_addr + cpu->X, data);
 }
 
 // ================
@@ -168,12 +262,12 @@ Byte ldxy_zp(CPU* cpu, Mem* mem, Byte xy_offset) {
     return fetch_zp(mem, zp_addr);
 }
 
-Byte ld_abs(CPU* cpu, Mem* mem) {
+Byte ld_absolute(CPU* cpu, Mem* mem) {
     Word addr = fetchWord(cpu, mem);
     return read_byte(mem, addr);
 }
 
-Byte ldaxy_abs(CPU* cpu, Mem* mem, Byte xy_offset) {
+Byte ldaxy_absolute(CPU* cpu, Mem* mem, Byte xy_offset) {
     Word addr = fetchWord(cpu, mem);
     return read_byte(mem, addr+xy_offset);
 }
@@ -188,7 +282,7 @@ Byte ldxy_indirect(CPU* cpu, Mem* mem, Byte xy_offset) {
 //*   JMP instructions
 //* ---------------------
 
-Word jmp_abs(CPU* cpu, Mem* mem) {
+Word jmp_absolute(CPU* cpu, Mem* mem) {
     return fetchWord(cpu, mem);
 }
 
@@ -248,27 +342,27 @@ void sta_zp(CPU* cpu, Mem* mem) {
     write_byte(mem, zp_addr, cpu->A);
 }
 
-void sta_zpx(CPU* cpu, Mem* mem) {
+void sta_zp_x(CPU* cpu, Mem* mem) {
     Byte zp_addr = fetchByte(cpu, mem);
     write_byte(mem, zp_addr + cpu->X, cpu->A);
 }
 
-void sta_abs(CPU* cpu, Mem* mem) {
+void sta_absolute(CPU* cpu, Mem* mem) {
     Word addr = fetchWord(cpu, mem);
     write_byte(mem, addr, cpu->A);
 }
 
-void sta_absx(CPU* cpu, Mem* mem) {
+void sta_absolute_x(CPU* cpu, Mem* mem) {
     Word addr = fetchWord(cpu, mem);
     write_byte(mem, addr + cpu->X, cpu->A);
 }
 
-void sta_absy(CPU* cpu, Mem* mem) {
+void sta_absolute_y(CPU* cpu, Mem* mem) {
     Word addr = fetchWord(cpu, mem);
     write_byte(mem, addr + cpu->Y, cpu->A);
 }
 
-void sta_indirectx(CPU* cpu, Mem* mem) {
+void sta_indirect_x(CPU* cpu, Mem* mem) {
     // indirect address
     Word iaddr = fetchWord(cpu, mem);
     //real address to store data
@@ -276,7 +370,7 @@ void sta_indirectx(CPU* cpu, Mem* mem) {
     write_byte(mem, addr, cpu->A);
 }
 
-void sta_indirecty(CPU* cpu, Mem* mem) {
+void sta_indirect_y(CPU* cpu, Mem* mem) {
     // indirect address
     Word iaddr = fetchWord(cpu, mem);
     //real address to store data
@@ -291,12 +385,12 @@ void stx_zp(CPU* cpu, Mem* mem) {
     write_byte(mem, zp_addr, cpu->X);
 }
 
-void stx_zpy(CPU* cpu, Mem* mem) {
+void stx_zp_y(CPU* cpu, Mem* mem) {
     Byte zp_addr = fetchByte(cpu, mem);
     write_byte(mem, zp_addr + cpu->Y, cpu->X);
 }
 
-void stx_abs(CPU* cpu, Mem* mem) {
+void stx_absolute(CPU* cpu, Mem* mem) {
     Word addr = fetchWord(cpu, mem);
     write_byte(mem, addr, cpu->X);
 }
@@ -308,12 +402,12 @@ void sty_zp(CPU* cpu, Mem* mem) {
     write_byte(mem, zp_addr, cpu->Y);
 }
 
-void sty_zpx(CPU* cpu, Mem* mem) {
+void sty_zp_x(CPU* cpu, Mem* mem) {
     Byte zp_addr = fetchByte(cpu, mem);
     write_byte(mem, zp_addr + cpu->X, cpu->Y);
 }
 
-void sty_abs(CPU* cpu, Mem* mem) {
+void sty_absolute(CPU* cpu, Mem* mem) {
     Word addr = fetchWord(cpu, mem);
     write_byte(mem, addr, cpu->Y);
 }
@@ -365,36 +459,70 @@ void execute(CPU* cpu, Mem* mem) {
         Byte ins = fetchByte(cpu, mem);
 
         switch (ins) {
+            case ADC_IMM: {
+                adc_imm(cpu, mem);
+                clock(0.2);
+                debug(*cpu);
+            }
+            break;
+            case ADC_ZP: {
+                adc_zp(cpu, mem);
+                clock(0.3);
+            }
+            break;       
+            case ADC_ZPX: {
+                adc_zp_x(cpu, mem);
+                clock(0.4);
+            }
+            break;         
+            case ADC_ABS: {
+                adc_absolute(cpu, mem);
+                clock(0.4);
+            }
+            break;
+            case ADC_ABSX: {
+                adc_absolute_x(cpu, mem);
+                clock(0.4);
+            }
+            break;
+            case ADC_ABSY: {
+                adc_absolute_y(cpu, mem);
+                clock(0.4);
+            }
+            break;
+            case ADC_INDIRECTX: {
+                adc_indirect_x(cpu, mem);
+                clock(0.4);
+            }
+            break;
+            case ADC_INDIRECTY: {
+                adc_indirect_y(cpu, mem);
+                clock(0.4);
+            }
+            break;
             case ASL_ACC: {
                 asl_acc(cpu, mem);
                 clock(0.2);
-                printf("shifted value is acc: %d \n", cpu->A);
             }
             break;
             case ASL_ZP: {
                 asl_zp(cpu, mem);
                 clock(0.5);
-                printf("shifted value is zp: %d \n", mem->memory[0x56]);
             }
             break;
             case ASL_ZPX: {
-                cpu->X = 1; // TODO: delete after testing
-                asl_zpx(cpu, mem);
+                asl_zp_x(cpu, mem);
                 clock(0.6);
-                printf("shifted value is zpx: %d \n", mem->memory[0x59]);
             }
             break;
             case ASL_ABS: {
-                asl_abs(cpu, mem);
+                asl_absolute(cpu, mem);
                 clock(0.6);
-                printf("shifted value is abs: %d \n", mem->memory[0x5656]);
             }
             break;
             case ASL_ABSX: {                
-                cpu->X = 1; // TODO: delete after testing
-                asl_absx(cpu, mem);
+                asl_absolute_x(cpu, mem);
                 clock(0.6);
-                printf("shifted value is absx: %d \n", mem->memory[0x5758]);
             }
             break;
             case CLC: {
@@ -439,21 +567,21 @@ void execute(CPU* cpu, Mem* mem) {
             }
             break;
             case LDA_ABS: {
-                cpu->A = ld_abs(cpu, mem);
+                cpu->A = ld_absolute(cpu, mem);
                 flag_Z(cpu, cpu->A);
                 flag_N(cpu, cpu->A);
                 clock(0.4);
             }
             break;
             case LDA_ABS_X: {
-                cpu->A = ldaxy_abs(cpu, mem, cpu->X);
+                cpu->A = ldaxy_absolute(cpu, mem, cpu->X);
                 flag_Z(cpu, cpu->A);
                 flag_N(cpu, cpu->A);
                 clock(0.4);
             }
             break;
             case LDA_ABS_Y: {
-                cpu->A = ldaxy_abs(cpu, mem, cpu->Y);
+                cpu->A = ldaxy_absolute(cpu, mem, cpu->Y);
                 flag_Z(cpu, cpu->A);
                 flag_N(cpu, cpu->A);
                 clock(0.4);
@@ -495,14 +623,14 @@ void execute(CPU* cpu, Mem* mem) {
             }
             break;
             case LDX_ABS: {
-                cpu->X = ld_abs(cpu, mem);
+                cpu->X = ld_absolute(cpu, mem);
                 flag_Z(cpu, cpu->X);
                 flag_N(cpu, cpu->X);
                 clock(0.4);
             }
             break;
             case LDX_ABS_Y: {
-                cpu->X = ldaxy_abs(cpu, mem, cpu->Y);
+                cpu->X = ldaxy_absolute(cpu, mem, cpu->Y);
                 flag_Z(cpu, cpu->X);
                 flag_N(cpu, cpu->X);
                 clock(0.4);
@@ -531,21 +659,21 @@ void execute(CPU* cpu, Mem* mem) {
             }
             break;
             case LDY_ABS: {
-                cpu->Y = ld_abs(cpu, mem);
+                cpu->Y = ld_absolute(cpu, mem);
                 flag_Z(cpu, cpu->Y);
                 flag_N(cpu, cpu->Y);
                 clock(0.4);
             }
             break;
             case LDY_ABS_X: {
-                cpu->Y = ldaxy_abs(cpu, mem, cpu->X);
+                cpu->Y = ldaxy_absolute(cpu, mem, cpu->X);
                 flag_Z(cpu, cpu->Y);
                 flag_N(cpu, cpu->Y);
                 clock(0.4);
             }
             break;
             case JMP_ABS: {
-                cpu->PC = jmp_abs(cpu, mem);
+                cpu->PC = jmp_absolute(cpu, mem);
                 clock(0.3);
             }
             break;
@@ -577,32 +705,32 @@ void execute(CPU* cpu, Mem* mem) {
                 clock(0.2);
             }
             case STA_ZPX: {
-                sta_zpx(cpu, mem);
+                sta_zp_x(cpu, mem);
                 clock(0.4);
             }
             break;
             case STA_ABS: {
-                sta_abs(cpu, mem);
+                sta_absolute(cpu, mem);
                 clock(0.4);
             }
             break;
             case STA_ABSX: {
-                sta_absx(cpu, mem);
+                sta_absolute_x(cpu, mem);
                 clock(0.5);
             }
             break;
             case STA_ABSY: {
-                sta_absy(cpu, mem);
+                sta_absolute_y(cpu, mem);
                 clock(0.5);
             }
             break;
             case STA_INDIRECT_X: {
-                sta_indirectx(cpu, mem);
+                sta_indirect_x(cpu, mem);
                 clock(0.6);
             }
             break;
              case STA_INDIRECT_Y: {
-                sta_indirecty(cpu, mem);
+                sta_indirect_y(cpu, mem);
                 clock(0.6);
             }
             break;
@@ -612,12 +740,12 @@ void execute(CPU* cpu, Mem* mem) {
             }
             break;
             case STX_ZPY: {
-                stx_zpy(cpu, mem);
+                stx_zp_y(cpu, mem);
                 clock(0.4);
             }
             break;
             case STX_ABS: {
-                stx_abs(cpu, mem);
+                stx_absolute(cpu, mem);
                 clock(0.4);
             }
             case STY_ZP: {
@@ -626,12 +754,12 @@ void execute(CPU* cpu, Mem* mem) {
             }
             break;
             case STY_ZPX: {
-                sty_zpx(cpu, mem);
+                sty_zp_x(cpu, mem);
                 clock(0.4);
             }
             break;
             case STY_ABS: {
-                sty_abs(cpu, mem);
+                sty_absolute(cpu, mem);
                 clock(0.4);
             }
             break;
@@ -682,31 +810,44 @@ int main() {
 
     reset(cpu, memory);
 
-    // asl acc
-    memory.memory[0] = 0x0A;
+    // abc acc
+    memory.memory[0] = 0x69;
+    memory.memory[1] = 30;
+    cpu.A = 240;
+
+    // expected 
+    // A = 70
+
+    // N = 0
+    // C = 0
+    // Z = 1
+    // V = 0
+
+
+
+
+    // // asl zp 
+    // memory.memory[1] = 0x06;
+    // memory.memory[2] = 0x56;
+    // memory.memory[0x56] = 1;
+
+    // // asl zpx 
     
-    // asl zp 
-    memory.memory[1] = 0x06;
-    memory.memory[2] = 0x56;
-    memory.memory[0x56] = 1;
+    // memory.memory[3] = 0x16;
+    // memory.memory[4] = 0x58;
+    // memory.memory[0x59] = 2;
 
-    // asl zpx 
-    
-    memory.memory[3] = 0x16;
-    memory.memory[4] = 0x58;
-    memory.memory[0x59] = 2;
+    // // asl abs 
+    // memory.memory[5] = 0x0E;
+    // memory.memory[6] = 0x56;
+    // memory.memory[7] = 0x56;
+    // memory.memory[0x5656] = 3;
 
-    // asl abs 
-    memory.memory[5] = 0x0E;
-    memory.memory[6] = 0x56;
-    memory.memory[7] = 0x56;
-    memory.memory[0x5656] = 3;
-
-    // asl absx
-    memory.memory[8] = 0x1E;
-    memory.memory[9] = 0x57;
-    memory.memory[10] = 0x57;
-    memory.memory[0x5758] = 8;
+    // // asl absx
+    // memory.memory[8] = 0x1E;
+    // memory.memory[9] = 0x57;
+    // memory.memory[10] = 0x57;
+    // memory.memory[0x5758] = 8;
 
     execute(&cpu, &memory);
 

@@ -3,6 +3,14 @@
 // ==================
 
 
+#define ADC_IMM       0x69
+#define ADC_ZP        0x65
+#define ADC_ZPX       0x75
+#define ADC_ABS       0x6D
+#define ADC_ABSX      0x7D
+#define ADC_ABSY      0x79
+#define ADC_INDIRECTX 0x61
+#define ADC_INDIRECTY 0x71
 #define ASL_ACC  0x0A
 #define ASL_ZP   0x06
 #define ASL_ZPX  0x16
